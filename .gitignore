@@ -1,0 +1,5 @@
+.env
+token.json
+langcredentials.json
+*.log
+.cph/
