@@ -273,7 +273,7 @@ if __name__ == "__main__":
             continue
             
         # =====================================================================
-        # [DAY 5] BATCH INFERENCE INVOCATION & ERROR SHIELDED SYNCHRONIZATION LOOP
+        #  BATCH INFERENCE INVOCATION & ERROR SHIELDED SYNCHRONIZATION LOOP
         # =====================================================================
         try:
             inference_batch = agent_chain.invoke({"message": user_input})
@@ -298,7 +298,7 @@ if __name__ == "__main__":
                     else:
                         logging.info(f"☕ [SKIPPED ADMINISTRATIVE RECORD]: {target_event.title} (Reason: Structural chat conversation noise)")
                 except Exception as isolated_error:
-                    logging.error(f"❌ Error Isolation Shield Intercepted Event Defect on '{target_event.title}': {isolated_error}")
+                    logging.error(f" Error Isolation Shield Intercepted Event Defect on '{target_event.title}': {isolated_error}")
                     logging.info("Shield active. Recovering runtime pipeline state context to process remaining batch blocks...")
                     continue
                     
