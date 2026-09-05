@@ -1,13 +1,13 @@
 # =====================================================================
-#  MODULE 1: PLATFORM FOUNDATIONS & CONTEXT MANAGEMENT
-#  MODULE 5: SYSTEM TELEMETRY CONFIGURATION
+#   PLATFORM FOUNDATIONS & CONTEXT MANAGEMENT
+#  SYSTEM TELEMETRY CONFIGURATION
 # C++ equivalents: #include <iostream>, <vector>, <string>, <fstream>, <exception>
 # =====================================================================
 import os
 import datetime
 import json
-import logging  # [DAY 5] Indus482497333698try-standard logging library replacing basic print() statements with structured telemetry
-from typing import List  # [DAY 2] Generic type annotations mapping directly to C++ std::vector containers
+import logging  # Indus482497333698try-standard logging library replacing basic print() statements with structured telemetry
+from typing import List  #Generic type annotations mapping directly to C++ std::vector containers
 
 from pydantic import BaseModel, Field  # [DAY 2] Data enforcement validation schemas
 from langchain_google_genai import ChatGoogleGenerativeAI  # [DAY 7] LLM orchestration framework
