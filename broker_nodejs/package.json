@@ -1,0 +1,15 @@
+{
+  "name": "notifai-broker",
+  "version": "1.0.0",
+  "description": "WhatsApp WebSocket Interceptor and RabbitMQ Producer",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}

@@ -1,0 +1,9 @@
+node_modules/
+.wwebjs_auth/
+__pycache__/
+*.env
+.env
+*.sqlite3
+.DS_Store
+engine_python/token.json
+engine_python/langcredentials.json

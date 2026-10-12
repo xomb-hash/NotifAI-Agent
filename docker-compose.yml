@@ -1,0 +1,44 @@
+services:
+  broker_nodejs:
+    build: ./broker_nodejs
+    container_name: notifai-nodejs
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./broker_nodejs/qr_server.js:/app/qr_server.js
+      - ./broker_nodejs/wa_listener.js:/app/wa_listener.js
+      - ./broker_nodejs/.wwebjs_auth:/app/.wwebjs_auth
+    environment:
+      ENGINE_URL: http://engine_python:5005/process-notice
+      ONLY_GROUPS: "true"
+      ALLOWED_GROUPS: "${ALLOWED_GROUPS:-}"
+    env_file:
+      - ./broker_nodejs/.env
+    depends_on:
+      - engine_python
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
+
+  engine_python:
+    build: ./engine_python
+    container_name: notifai-python
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./engine_python/agent.py:/app/agent.py
+      - ./engine_python/.env:/app/.env
+      - ./engine_python/token.json:/app/token.json
+      - ./engine_python/langcredentials.json:/app/langcredentials.json
+    environment:
+      RUN_MODE: consumer
+    env_file:
+      - ./engine_python/.env
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    restart: unless-stopped
+
