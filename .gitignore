@@ -1,9 +1,41 @@
-node_modules/
-.wwebjs_auth/
-__pycache__/
-*.env
+# Secrets & Credentials - NEVER COMMIT THESE
 .env
-*.sqlite3
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/token.json
+**/langcredentials.json
+**/credentials*.json
+
+# WhatsApp Web Session & Browser Cache - NEVER COMMIT THESE
+.wwebjs_auth/
+.wwebjs_auth*/
+**/.wwebjs_auth/
+**/.wwebjs_auth*/
+
+# Dependencies
+node_modules/
+**/node_modules/
+venv/
+**/venv/
+env/
+**/.venv/
+
+# Python Bytecode
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+app.log
+
+# OS & Editor Files
 .DS_Store
-engine_python/token.json
-engine_python/langcredentials.json
+**/.DS_Store
+.idea/
+.vscode/
+*.sqlite3
