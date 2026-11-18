@@ -1,4 +1,16 @@
 services:
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: notifai-chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=False
+      - ALLOW_RESET=TRUE
+    restart: unless-stopped
+
   broker_nodejs:
     build: ./broker_nodejs
     container_name: notifai-nodejs
@@ -35,10 +47,17 @@ services:
       - ./engine_python/langcredentials.json:/app/langcredentials.json
     environment:
       RUN_MODE: consumer
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
     env_file:
       - ./engine_python/.env
+    depends_on:
+      - chroma
     dns:
       - 8.8.8.8
       - 1.1.1.1
     restart: unless-stopped
+
+volumes:
+  chroma_data:
 

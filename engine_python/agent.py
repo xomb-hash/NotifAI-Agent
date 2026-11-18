@@ -17,16 +17,12 @@ import requests
 from typing import List
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
+
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
-
-try:
-    from langchain_sarvam import ChatSarvam
-except ImportError:
-    ChatSarvam = None
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -34,7 +30,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 # Injects security credentials and tokens from local hidden environmental variables (.env)
-load_dotenv(override=True)
+load_dotenv()
 
 # OAuth 2.0 Access Scopes: Strictly limits the agent's write permission boundary to calendar events only
 SCOPES = ['https://www.googleapis.com/auth/calendar.events']
@@ -68,21 +64,15 @@ class AISchemaValidationError(Exception):
 #   DATA VALIDATION LAYER (PYDANTIC SCHEMAS)
 # =====================================================================
 class CollegeEvent(BaseModel):
-    """
-    Core Structural Entity for actionable events, notices, and reminders.
-    """
     is_important_notice: bool = Field(
-        description="True for any actionable reminder, to-do, event-related task, call/meeting request (e.g. 'call event manager', 'meet coordinator'), academic notice, exam, test, deadline, fest, workshop, or urgent announcement. False ONLY for pure conversational chatter like 'ok', 'gm', 'lol', 'thanks'."
+        description="True for any actionable reminder, to-do, or event notice."
     )
-    title: str = Field(description="A concise, actionable title for the reminder/event (e.g., 'Call Event Manager', 'Midsem Exam in Hall A').")
-    date: str = Field(description="The target event date in absolute format YYYY-MM-DD. If relative ('today', 'tomorrow'), resolve using today's anchor date. Default to today's date if unspecified.")
-    time: str = Field(description="The target event timestamp in 24-hour HH:MM format. Default to '10:00' if unspecified.")
-    description: str = Field(description="Context snippet, location flags, room details, or original message texts.")
-
+    title: str = Field(description="Actionable title for the event or reminder.")
+    date: str = Field(description="Target date in YYYY-MM-DD.")
+    time: str = Field(description="24-hour time HH:MM format.")
+    description: str = Field(description="Original message text and location.")
 class CollegeEventList(BaseModel):
-    """Array structural collection wrapper mapping directly to std::vector<CollegeEvent>."""
-    events: List[CollegeEvent] = Field(description="Array listing of individual valid parsed events and reminders discovered in text payloads.")
-
+    events: List[CollegeEvent] = Field(description="List of extracted events.")
 
 # =====================================================================
 #  LANGCHAIN PIPELINE FACTORY WITH MODEL FALLBACKS
@@ -122,11 +112,6 @@ Rules:
     return _COMPILED_CHAINS[model_name]
 
 
-_SARVAM_SESSION = requests.Session()
-_adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10)
-_SARVAM_SESSION.mount('https://', _adapter)
-_SARVAM_SESSION.mount('http://', _adapter)
-
 # =====================================================================
 #  SARVAM AI SPEECH-TO-TEXT (VOICE NOTE ASR PIPELINE)
 # =====================================================================
@@ -155,23 +140,21 @@ def transcribe_audio_with_sarvam(audio_base64: str, audio_mimetype: str = "audio
         elif "mp4" in audio_mimetype or "m4a" in audio_mimetype:
             file_ext = "m4a"
 
-        audio_bytes = base64.b64decode(audio_base64)
         files = {
             "file": (f"voice_note.{file_ext}", audio_bytes, audio_mimetype)
         }
         data = {
-            "model": os.getenv("SARVAM_STT_MODEL", "saaras:v4"),
-            "mode": os.getenv("SARVAM_STT_MODE", "translate")
+            "model": os.getenv("SARVAM_STT_MODEL", "saaras:v4")
         }
 
-        logging.info(f"🎙️ [Sarvam Saaras ASR] Converting {len(audio_bytes)} bytes voice note ({audio_mimetype}) to English text (mode=translate)...")
-        response = _SARVAM_SESSION.post(url, headers=headers, files=files, data=data, timeout=25)
+        logging.info(f"🎙️ [Sarvam Saaras ASR] Sending {len(audio_bytes)} bytes audio ({audio_mimetype}) to Sarvam STT API...")
+        response = requests.post(url, headers=headers, files=files, data=data, timeout=30)
 
         if response.status_code == 200:
             result = response.json()
             transcript = result.get("transcript", "").strip()
             detected_lang = result.get("language_code", "Indic")
-            logging.info(f"🎙️ [Sarvam Saaras Voice -> English Output] (Detected Lang: {detected_lang}): \"{transcript}\"")
+            logging.info(f"🎙️ [Sarvam Voice Note Transcribed] ({detected_lang}): \"{transcript}\"")
             return transcript
         else:
             logging.error(f"❌ Sarvam STT API Error ({response.status_code}): {response.text}")
@@ -187,7 +170,7 @@ def transcribe_audio_with_sarvam(audio_base64: str, audio_mimetype: str = "audio
 def get_chain_for_sarvam(model_name: str = None):
     """
     Constructs native LangChain LCEL pipeline backed by Sarvam AI Indus model (e.g. sarvam-105b).
-    Uses ChatSarvam (or ChatOpenAI fallback) connected to Sarvam's API with Pydantic structured output.
+    Uses ChatOpenAI connected to Sarvam's OpenAI-compatible API with Pydantic structured output.
     """
     sarvam_api_key = os.getenv("SARVAM_API_KEY", "").strip()
     if not sarvam_api_key:
@@ -202,37 +185,13 @@ def get_chain_for_sarvam(model_name: str = None):
 
     cache_key = f"sarvam_langchain_{model_name}"
     if cache_key not in _COMPILED_CHAINS:
-        if ChatSarvam is not None:
-            try:
-                llm = ChatSarvam(
-                    model_name=model_name,
-                    sarvam_api_key=sarvam_api_key,
-                    max_tokens=350,
-                    temperature=0.0
-                )
-            except Exception as sarvam_init_err:
-                logging.warning(f"ChatSarvam native init note: {sarvam_init_err}. Engaging ChatOpenAI wrapper...")
-                llm = ChatOpenAI(
-                    model=model_name,
-                    base_url=base_url,
-                    api_key=sarvam_api_key,
-                    default_headers={"api-subscription-key": sarvam_api_key},
-                    temperature=0.0,
-                    max_tokens=350,
-                    timeout=20.0
-                )
-        else:
-            llm = ChatOpenAI(
-                model=model_name,
-                base_url=base_url,
-                api_key=sarvam_api_key,
-                default_headers={"api-subscription-key": sarvam_api_key},
-                temperature=0.0,
-                max_tokens=350,
-                timeout=20.0
-            )
-
-
+        llm = ChatOpenAI(
+            model=model_name,
+            base_url=base_url,
+            api_key=sarvam_api_key,
+            default_headers={"api-subscription-key": sarvam_api_key},
+            temperature=0.0
+        )
         structured_llm = llm.with_structured_output(CollegeEventList)
         actual_today = datetime.date.today().strftime("%A, %B %d, %Y")
         today_iso = datetime.date.today().strftime("%Y-%m-%d")
@@ -337,12 +296,11 @@ Output ONLY a valid JSON object matching this schema without markdown fences:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Analyze this chat notice/message:\n\n{user_input}"}
         ],
-        "temperature": 0.0,
-        "max_tokens": 350
+        "temperature": 0.0
     }
 
     logging.info(f"Routing text payload to Sarvam AI REST API fallback ('{model_name}')...")
-    response = _SARVAM_SESSION.post(url, headers=headers, json=payload, timeout=20)
+    response = requests.post(url, headers=headers, json=payload, timeout=30)
 
     if response.status_code != 200:
         raise RuntimeError(f"Sarvam LLM API returned {response.status_code}: {response.text}")
@@ -434,14 +392,11 @@ def add_to_google_calendar(event_data: CollegeEvent):
     """Formats structural event maps and executes API POST calls with multi-tier notification reminders."""
     try:
         service = get_calendar_service()
-        try:
-            start_dt = datetime.datetime.strptime(f"{event_data.date} {event_data.time}", "%Y-%m-%d %H:%M")
-            end_dt = start_dt + datetime.timedelta(hours=1)
-            start_iso = start_dt.strftime("%Y-%m-%dT%H:%M:00")
-            end_iso = end_dt.strftime("%Y-%m-%dT%H:%M:00")
-        except Exception:
-            start_iso = f"{event_data.date}T{event_data.time}:00"
-            end_iso = f"{event_data.date}T23:59:59"
+        start_iso = f"{event_data.date}T{event_data.time}:00"
+        
+        hour_digits = int(event_data.time[:2])
+        end_hour_digits = str(hour_digits + 1).zfill(2) if hour_digits < 23 else "00"
+        end_iso = f"{event_data.date}T{end_hour_digits}{event_data.time[2:]}:00"
 
         event_payload = {
             'summary': event_data.title,
@@ -517,12 +472,11 @@ def process_notice_payload(user_input: str = "", audio_base64: str = None, audio
     """
     # Step 1: Voice transcription if audio payload is present
     if audio_base64:
-        logging.info("🎙️ [Voice Pipeline Active] Processing WhatsApp voice note with Sarvam Saaras model (Voice -> English Translation)...")
+        logging.info("🎙️ Processing WhatsApp voice note audio with Sarvam Saaras ASR...")
         transcript = transcribe_audio_with_sarvam(audio_base64, audio_mimetype)
         if transcript:
             user_input = transcript
-            logging.info(f"🎙️ [Saaras English Output Generated]: \"{user_input}\"")
-            logging.info("🧠 Feeding English transcript directly into Sarvam 105B LLM for calendar notice extraction...")
+            logging.info(f"🎙️ Using transcribed audio for calendar notice extraction: \"{user_input}\"")
         else:
             logging.warning("⚠️ Could not transcribe audio voice note. Skipping.")
             return
@@ -534,22 +488,30 @@ def process_notice_payload(user_input: str = "", audio_base64: str = None, audio
     inference_batch = None
     last_exception = None
 
-    # Sarvam AI Indic Reasoning LLM (sarvam-105b) - Sole AI Processing Engine
+    # Priority 1: Sarvam AI Indic Reasoning LLM (sarvam-105b / sarvam-30b)
     sarvam_api_key = os.getenv("SARVAM_API_KEY", "").strip()
-    if not sarvam_api_key:
-        logging.error("❌ [SARVAM AI REQUIRED] SARVAM_API_KEY is not configured in engine_python/.env.")
-        logging.error("   The system is configured to process all notices strictly with Sarvam AI models (sarvam-105b & Saaras ASR).")
-        logging.error("   Please open engine_python/.env and set: SARVAM_API_KEY=your_key_here")
-        return
+    if sarvam_api_key:
+        try:
+            inference_batch = extract_with_sarvam_llm(user_input)
+        except Exception as sarvam_err:
+            logging.warning(f"Sarvam LLM extraction failed or quota exhausted: {sarvam_err}")
+            last_exception = sarvam_err
 
-    try:
-        inference_batch = extract_with_sarvam_llm(user_input)
-    except Exception as sarvam_err:
-        logging.error(f"❌ Sarvam 105B LLM extraction failed: {sarvam_err}")
-        last_exception = sarvam_err
+    # Priority 2: Automatic Fallback to Gemini Flash if Sarvam is not configured or failed
+    if not inference_batch or not hasattr(inference_batch, 'events'):
+        for model_name in FALLBACK_MODELS:
+            try:
+                logging.info(f"Fallback routing to LangChain pipeline model '{model_name}'...")
+                chain = get_chain_for_model(model_name)
+                inference_batch = chain.invoke({"message": user_input})
+                if inference_batch and hasattr(inference_batch, 'events'):
+                    break
+            except Exception as model_err:
+                logging.warning(f"Model '{model_name}' fallback failed: {model_err}")
+                last_exception = model_err
 
     if not inference_batch or not hasattr(inference_batch, 'events'):
-        logging.error(f"❌ Sarvam 105B Extraction / Schema Validation Failure: {last_exception}")
+        logging.error(f"Pydantic Structure Validation / AI Core Failure: {last_exception}")
         return
 
     has_valid_notices = False
@@ -624,18 +586,17 @@ class NoticeRequestHandler(BaseHTTPRequestHandler):
         pass
 
 def prewarm_engine():
-    """Pre-warms Google Calendar API client (Google API only) and Sarvam 105B AI chain."""
+    """Pre-warms Google Calendar API client and primary AI chain to eliminate cold starts."""
     try:
-        logging.info("⚡ [Pre-warming] Warming up Google Calendar client (Google APIs only)...")
+        logging.info("⚡ [Pre-warming] Warming up Google Calendar client and primary AI chain...")
         get_calendar_service()
         sarvam_key = os.getenv("SARVAM_API_KEY", "").strip()
         if sarvam_key:
-            logging.info(f"⚡ [Pre-warming] Pre-warming Sarvam Indic 105B LLM ({os.getenv('SARVAM_MODEL', 'sarvam-105b')})...")
-            get_chain_for_sarvam()
-            logging.info("⚡ [Pre-warming Complete] NotifAI Engine ready: Sarvam 105B AI + Google Calendar APIs!")
+            logging.info(f"⚡ [Pre-warming] Sarvam AI Key detected. Defaulting to Sarvam Indic LLM ({os.getenv('SARVAM_MODEL', 'sarvam-105b')}).")
         else:
-            logging.warning("⚠️ [Pre-warming Notice] SARVAM_API_KEY is not yet configured in engine_python/.env.")
-            logging.warning("   Please paste your Sarvam API Key to activate Sarvam 105B inference.")
+            logging.info("⚡ [Pre-warming] Pre-warming fallback Gemini chain...")
+            get_chain_for_model(FALLBACK_MODELS[0])
+        logging.info("⚡ [Pre-warming Complete] NotifAI Engine is pre-warmed for instant execution!")
     except Exception as e:
         logging.debug(f"Pre-warming notice: {e}")
 
