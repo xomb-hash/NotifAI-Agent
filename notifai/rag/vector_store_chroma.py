@@ -1,12 +1,13 @@
-"""ChromaDB-backed vector store implementation."""
+"""ChromaDB-backed vector store implementation.
+
+The chromadb import is deferred to __init__ so this module can be imported
+in environments without chromadb installed (e.g. unit tests).
+"""
 
 from __future__ import annotations
 
 import logging
 from typing import Any
-
-import chromadb
-from chromadb.config import Settings as ChromaSettings
 
 from notifai.config.settings import settings
 from notifai.core.schemas import Chunk, RetrievalResult
@@ -24,6 +25,9 @@ class ChromaVectorStore(VectorStore):
         port: int | None = None,
         collection_name: str | None = None,
     ) -> None:
+        import chromadb
+        from chromadb.config import Settings as ChromaSettings
+
         self._host = host or settings.chroma_host
         self._port = port or settings.chroma_port
         self._collection_name = collection_name or settings.chroma_collection
