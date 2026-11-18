@@ -25,8 +25,8 @@ def _get_calendar_service() -> Any:
     if _CALENDAR_SERVICE is not None:
         return _CALENDAR_SERVICE
 
-    from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 

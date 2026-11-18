@@ -16,10 +16,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from notifai.agents.extractor import ExtractionInput, ExtractionOutput, extract_events
-from notifai.agents.retriever import RetrieverInput, RetrieverOutput, retrieve_context
-from notifai.agents.scheduler import SchedulerInput, SchedulerOutput, schedule_validated_events
-from notifai.agents.validator import ValidationInput, ValidationOutput, validate_events
+from notifai.agents.extractor import extract_events
+from notifai.agents.retriever import retrieve_context
+from notifai.agents.scheduler import schedule_validated_events
+from notifai.agents.validator import validate_events
 from notifai.config.settings import settings
 from notifai.core.schemas import CollegeEvent
 

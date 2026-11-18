@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -40,10 +38,10 @@ class Settings(BaseSettings):
     # API Server
     api_host: str = Field(default="0.0.0.0", validation_alias="API_HOST")
     api_port: int = Field(default=8080, validation_alias="API_PORT")
-    api_key: Optional[str] = Field(default=None, validation_alias="API_KEY")
+    api_key: str | None = Field(default=None, validation_alias="API_KEY")
 
     # Observability
-    otel_endpoint: Optional[str] = Field(default=None, validation_alias="OTEL_ENDPOINT")
+    otel_endpoint: str | None = Field(default=None, validation_alias="OTEL_ENDPOINT")
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
 
     # RAG Settings

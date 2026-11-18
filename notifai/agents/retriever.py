@@ -7,7 +7,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from notifai.core.schemas import RetrievalResult
 from notifai.tools.rag_tool import (
     ingest_notice,
     retrieve_deadlines_this_week,

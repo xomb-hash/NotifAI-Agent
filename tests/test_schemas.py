@@ -1,7 +1,7 @@
 """Tests for core Pydantic schemas."""
 
+
 import pytest
-from datetime import datetime
 
 from notifai.core.schemas import (
     Chunk,
@@ -9,7 +9,6 @@ from notifai.core.schemas import (
     CollegeEventList,
     EventStatus,
     NoticeType,
-    RetrievalResult,
     SessionState,
 )
 
@@ -28,7 +27,7 @@ class TestCollegeEvent:
         assert event.notice_type == NoticeType.EVENT
 
     def test_invalid_date_format(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             CollegeEvent(
                 is_important_notice=True,
                 title="Test",
@@ -38,7 +37,7 @@ class TestCollegeEvent:
             )
 
     def test_invalid_time_format(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             CollegeEvent(
                 is_important_notice=True,
                 title="Test",

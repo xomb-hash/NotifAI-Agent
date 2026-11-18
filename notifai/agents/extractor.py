@@ -5,14 +5,12 @@ from __future__ import annotations
 import datetime
 import json
 import logging
-import re
 import time
-from typing import Any
 
 from pydantic import BaseModel, Field
 
 from notifai.config.settings import settings
-from notifai.core.schemas import CollegeEvent, CollegeEventList, NoticeType
+from notifai.core.schemas import CollegeEvent, CollegeEventList
 
 logger = logging.getLogger(__name__)
 
@@ -149,8 +147,8 @@ def extract_events(
 
 def _extract_with_langchain_fallback(message: str) -> ExtractionOutput:
     """Fallback extraction using LangChain (for environments without google-genai)."""
-    from langchain_google_genai import ChatGoogleGenerativeAI
     from langchain_core.prompts import ChatPromptTemplate
+    from langchain_google_genai import ChatGoogleGenerativeAI
 
     today = datetime.date.today().strftime("%A, %B %d, %Y")
     today_iso = datetime.date.today().isoformat()

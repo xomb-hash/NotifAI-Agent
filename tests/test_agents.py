@@ -2,9 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from notifai.core.schemas import CollegeEvent, EventStatus, NoticeType
+from notifai.core.schemas import CollegeEvent
 
 
 class TestValidator:
@@ -179,8 +177,8 @@ class TestRouter:
         mock_extract: MagicMock,
     ) -> None:
         from notifai.agents.extractor import ExtractionOutput
-        from notifai.agents.scheduler import SchedulerOutput
         from notifai.agents.router import route_message
+        from notifai.agents.scheduler import SchedulerOutput
 
         events = [
             CollegeEvent(
@@ -284,7 +282,6 @@ class TestTracing:
             end_trace,
             record_agent_call,
             start_trace,
-            get_metrics_summary,
         )
 
         start_trace(request_id="test-1", session_id="sess-1")

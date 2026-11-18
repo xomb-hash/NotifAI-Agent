@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from notifai.core.schemas import CollegeEvent
-from notifai.tools.calendar_tool import schedule_event, schedule_events
+from notifai.tools.calendar_tool import schedule_event
 
 logger = logging.getLogger(__name__)
 

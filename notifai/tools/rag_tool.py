@@ -9,8 +9,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from notifai.core.schemas import RetrievalResult
-
 logger = logging.getLogger(__name__)
 
 _pipeline: Any = None

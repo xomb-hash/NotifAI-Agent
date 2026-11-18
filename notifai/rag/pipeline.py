@@ -7,7 +7,7 @@ from typing import Any
 
 from notifai.config.settings import settings
 from notifai.core.schemas import Chunk, CollegeEvent, RetrievalResult
-from notifai.rag.chunking import chunk_notice, chunk_raw_message
+from notifai.rag.chunking import chunk_notice
 from notifai.rag.embeddings import GeminiEmbeddingProvider
 from notifai.rag.interfaces import EmbeddingProvider, VectorStore
 from notifai.rag.vector_store_chroma import ChromaVectorStore
@@ -113,5 +113,5 @@ class RAGPipeline:
 def _embed_chunks(chunks: list[Chunk], embedder: EmbeddingProvider) -> None:
     texts = [c.content for c in chunks]
     embeddings = embedder.embed(texts)
-    for chunk, embedding in zip(chunks, embeddings):
+    for chunk, embedding in zip(chunks, embeddings, strict=False):
         chunk.embedding = embedding

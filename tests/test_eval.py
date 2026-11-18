@@ -3,7 +3,6 @@
 from notifai.core.schemas import CollegeEvent
 from notifai.eval.dataset import EVAL_CASES
 from notifai.eval.metrics import (
-    aggregate_metrics,
     compute_case_metrics,
     compute_field_accuracy,
     compute_hallucination_rate,

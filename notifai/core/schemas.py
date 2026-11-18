@@ -1,18 +1,21 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Literal, Dict, Any
+from __future__ import annotations
+
+import uuid
 from datetime import datetime
 from enum import Enum
-import uuid
+from typing import Any
+
+from pydantic import BaseModel, Field, field_validator
 
 
-class EventStatus(str, Enum):
+class EventStatus(str, Enum):  # noqa: UP042
     PENDING = "pending"
     SCHEDULED = "scheduled"
     CANCELLED = "cancelled"
     UPDATED = "updated"
 
 
-class NoticeType(str, Enum):
+class NoticeType(str, Enum):  # noqa: UP042
     EVENT = "event"
     DEADLINE = "deadline"
     MEETING = "meeting"
@@ -31,11 +34,11 @@ class CollegeEvent(BaseModel):
     description: str = Field(description="Original message text and location")
     notice_type: NoticeType = Field(default=NoticeType.EVENT)
     status: EventStatus = Field(default=EventStatus.PENDING)
-    source_message_id: Optional[str] = None
-    source_chat: Optional[str] = None
-    source_sender: Optional[str] = None
-    source_timestamp: Optional[datetime] = None
-    calendar_event_id: Optional[str] = None
+    source_message_id: str | None = None
+    source_chat: str | None = None
+    source_sender: str | None = None
+    source_timestamp: datetime | None = None
+    calendar_event_id: str | None = None
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     extracted_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -59,14 +62,14 @@ class CollegeEvent(BaseModel):
 
 
 class CollegeEventList(BaseModel):
-    events: List[CollegeEvent] = Field(default_factory=list)
+    events: list[CollegeEvent] = Field(default_factory=list)
 
 
 class Chunk(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     content: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    embedding: Optional[List[float]] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    embedding: list[float] | None = None
 
 
 class RetrievalResult(BaseModel):
@@ -75,7 +78,7 @@ class RetrievalResult(BaseModel):
 
 
 class ExtractionResult(BaseModel):
-    events: List[CollegeEvent]
+    events: list[CollegeEvent]
     raw_response: str
     model_used: str
     tokens_in: int
@@ -86,25 +89,25 @@ class ExtractionResult(BaseModel):
 
 class ValidationResult(BaseModel):
     is_valid: bool
-    issues: List[str] = Field(default_factory=list)
-    corrected_events: List[CollegeEvent] = Field(default_factory=list)
+    issues: list[str] = Field(default_factory=list)
+    corrected_events: list[CollegeEvent] = Field(default_factory=list)
     retry_needed: bool = False
 
 
 class SessionState(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: Optional[str] = None
-    chat_id: Optional[str] = None
-    message_id: Optional[str] = None
+    user_id: str | None = None
+    chat_id: str | None = None
+    message_id: str | None = None
     current_step: str = "router"
-    extracted_events: List[CollegeEvent] = Field(default_factory=list)
-    validated_events: List[CollegeEvent] = Field(default_factory=list)
-    scheduled_events: List[CollegeEvent] = Field(default_factory=list)
-    retrieved_context: List[RetrievalResult] = Field(default_factory=list)
+    extracted_events: list[CollegeEvent] = Field(default_factory=list)
+    validated_events: list[CollegeEvent] = Field(default_factory=list)
+    scheduled_events: list[CollegeEvent] = Field(default_factory=list)
+    retrieved_context: list[RetrievalResult] = Field(default_factory=list)
     validation_retries: int = 0
     max_validation_retries: int = 2
-    errors: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    errors: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from typing import Any
 
 from notifai.observability.tracing import get_metrics_summary, get_recent_traces

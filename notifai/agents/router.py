@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any
 
 from pydantic import BaseModel, Field
 
 from notifai.agents.extractor import ExtractionInput, ExtractionOutput, extract_events
 from notifai.agents.retriever import RetrieverOutput, retrieve_context
 from notifai.agents.scheduler import SchedulerOutput, schedule_validated_events
-from notifai.agents.validator import ValidationInput, ValidationOutput, validate_events
+from notifai.agents.validator import ValidationOutput, validate_events
 from notifai.core.schemas import CollegeEvent, SessionState
 from notifai.observability.tracing import (
     end_trace,
@@ -228,7 +227,7 @@ def route_message(
             logger.warning("RAG ingest failed: %s", e)
 
     state.update_step("done")
-    trace_result = end_trace()
+    end_trace()
 
     return RouterOutput(
         session_state=state,
