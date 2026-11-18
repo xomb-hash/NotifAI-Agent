@@ -1,0 +1,50 @@
+# NotifAI Enterprise - Cloud Run Dockerfile
+# Multi-stage build for minimal image size
+# Non-root user for security
+# Health check for Cloud Run
+
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+RUN pip install --no-cache-dir --upgrade pip
+
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+
+
+FROM python:3.12-slim
+
+# Create non-root user
+RUN groupadd --system notifai && useradd --system --gid notifai notifai
+
+WORKDIR /app
+
+# Copy wheels from builder and install
+COPY --from=builder /wheels /wheels
+COPY requirements.txt .
+RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt \
+    && rm -rf /wheels
+
+# Copy application code
+COPY notifai/ ./notifai/
+
+# Set ownership to non-root user
+RUN chown -R notifai:notifai /app
+
+# Switch to non-root user
+USER notifai
+
+# Cloud Run sets PORT env var (default 8080)
+ENV PORT=8080
+ENV API_HOST=0.0.0.0
+ENV API_PORT=8080
+ENV PYTHONUNBUFFERED=1
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health').read()" || exit 1
+
+EXPOSE 8080
+
+CMD ["python", "-m", "notifai.api.main"]
