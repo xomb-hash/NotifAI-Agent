@@ -1,0 +1,52 @@
+# NotifAI - Gemini API Pricing Configuration
+# Source: https://ai.google.dev/gemini-api/docs/pricing (Nov 2026)
+# All prices in USD per 1M tokens
+
+models:
+  gemini-3.5-flash-lite:
+    input: 0.30
+    output: 2.50
+    cached_input: 0.03
+    context: 1M
+    notes: "Cost-efficient model for structured extraction. Recommended default."
+
+  gemini-3.8-flash:
+    input: 0.75
+    output: 3.75
+    cached_input: 0.075
+    context: 1M
+    notes: "Promo pricing through Dec 31 2026. More capable but 2.5x cost."
+
+  gemini-3-flash:
+    input: 0.50
+    output: 3.00
+    cached_input: 0.05
+    context: 1M
+    notes: "Legacy Flash model, baseline speed and intelligence."
+
+  gemini-2.5-flash:
+    input: 0.30
+    output: 2.50
+    cached_input: 0.03
+    context: 1M
+    notes: "Deprecated Dec 1 2026, auto-routes to 3.5 Flash-Lite."
+
+  gemini-2.5-flash-lite:
+    input: 0.10
+    output: 0.40
+    cached_input: 0.01
+    context: 1M
+    notes: "Cheapest model. May struggle with complex Hinglish."
+
+embedding:
+  text-embedding-004:
+    input: 0.02
+    notes: "Per 1M tokens. Used for RAG pipeline."
+
+free_tier:
+  gemini-3.5-flash-lite:
+    rpd: 1500
+    notes: "Requests per day free tier"
+  gemini-3.8-flash:
+    rpd: 1500
+    notes: "Requests per day free tier"
